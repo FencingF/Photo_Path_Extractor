@@ -15,6 +15,7 @@ dependencies {
     implementation 'com.drewnoakes:metadata-extractor:2.19.0'
     implementation 'org.jxmapviewer:jxmapviewer2:2.8'
     implementation 'com.drewnoakes:metadata-extractor:2.19.0'
+    implementation 'com.google.code.gson:gson:2.11.0'
 }
 
 test {

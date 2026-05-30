@@ -5,29 +5,34 @@ import com.drew.imaging.ImageProcessingException;
 import com.drew.lang.GeoLocation;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.fenci.ppe.data.JSONData;
 import com.drew.metadata.exif.GpsDirectory;
 import org.fenci.ppe.map.Coordinate;
 import org.fenci.ppe.map.Map;
 
+import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
+import static org.fenci.ppe.data.SaverLoader.loadProject;
+import static org.fenci.ppe.data.SaverLoader.saveProject;
+
 public class Main {
 
     public static void main(String[] args) throws InterruptedException, IOException, ImageProcessingException {
 
-//        Scanner scanner = new Scanner(System.in);
-//        System.out.println("Enter project name: ");
-//        String projectName = scanner.nextLine();
-//
-//        String rootPath = System.getProperty("user.dir");
-//        File saveFolder = new File(rootPath + "\\src\\main\\java\\org\\fenci\\ppe\\data\\savedprojects");
-//
-//        System.out.println(saveFolder.exists());
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter project name: ");
+        String projectName = scanner.nextLine();
+
+        String rootPath = System.getProperty("user.dir");
+        File saveFolder = new File(rootPath + "\\src\\main\\java\\org\\fenci\\ppe\\data\\savedprojects");
+        File projectFile = new File(saveFolder, projectName + ".json");
 
         Map interMap = new Map();
 //        interMap.addPoint(new Coordinate(33.9695, -118.4165, Color.GREEN, "fsdfsd", "Arial"));
@@ -36,16 +41,32 @@ public class Main {
         File photoFolder = new File("C:\\Users\\jeanf\\Pictures\\iCloud Photos\\Photos");
 
         try {
-            List<JSONData> plottableData = getMapData(photoFolder);
+            List<JSONData> plottableData;
+
+            //TODO: PUT JSON CODE HERE
+            Gson gson = new GsonBuilder().setPrettyPrinting().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
+
+            if (projectFile.exists() && projectFile.isFile()) {
+                plottableData = loadProject(projectFile, gson);
+                System.out.println("Already exists");
+
+            } else {
+                plottableData = getMapData(photoFolder);
+                saveProject(plottableData, saveFolder, projectName, gson);
+            }
+
+            //TODO: END JSON CODE
+
             plottableData.sort(
                     Comparator.comparing(
                             JSONData::date
                     )
             );
+            long milliDelay = 1000L / plottableData.size();
             for (JSONData data : plottableData) {
                 System.out.println(data.date() + " " + data.latitude() + " " + data.longitude());
-                interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), Color.ORANGE, data.date().toString(), "Arial"));
-                Thread.sleep(10);
+                SwingUtilities.invokeLater(() -> interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), Color.ORANGE, data.date().toString(), "Arial")));
+                Thread.sleep(milliDelay);
             }
         } catch (NullPointerException e) {
             System.out.println("Fix your code lil bro");
