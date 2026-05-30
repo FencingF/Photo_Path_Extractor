@@ -227,4 +227,11 @@ public class Map {
 
         return new DefaultTileFactory(info);
     }
+
+    public boolean isVisible(double latitude, double longitude) {
+        GeoPosition position = new GeoPosition(latitude, longitude);
+        Point2D point = mapViewer.getTileFactory().geoToPixel(position, mapViewer.getZoom());
+        Rectangle viewport = mapViewer.getViewportBounds();
+        return viewport.contains(point);
+    }
 }

@@ -11,6 +11,7 @@ import org.fenci.ppe.data.JSONData;
 import com.drew.metadata.exif.GpsDirectory;
 import org.fenci.ppe.map.Coordinate;
 import org.fenci.ppe.map.Map;
+import org.jxmapviewer.viewer.GeoPosition;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,7 +26,7 @@ import static org.fenci.ppe.data.SaverLoader.saveProject;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException, IOException, ImageProcessingException {
+    public static void main(String[] args) throws InterruptedException, IOException {
 
         Map interMap = new Map();
         interMap.display();
@@ -47,7 +48,8 @@ public class Main {
         try {
             List<JSONData> plottableData;
 
-            //TODO: PUT JSON CODE HERE
+            //JSON CODE STARTS HERE
+
             Gson gson = new GsonBuilder().setPrettyPrinting().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
 
             if (projectFile.exists() && projectFile.isFile()) {
@@ -61,7 +63,7 @@ public class Main {
                 saveProject(plottableData, saveFolder, projectName, gson);
             }
 
-            //TODO: END JSON CODE
+            //END JSON CODE
 
             plottableData.sort(
                     Comparator.comparing(
@@ -70,10 +72,17 @@ public class Main {
             );
             SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
 
+            Color currentColor = Color.RED;
+
 //            long milliDelay = 3000L / plottableData.size();
             for (JSONData data : plottableData) {
+                currentColor = getNextRainbowColor(currentColor);
                 System.out.println(data.date() + " " + data.latitude() + " " + data.longitude());
-                SwingUtilities.invokeLater(() -> interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), Color.ORANGE, "", "Arial")));
+                Color finalCurrentColor = currentColor;
+                if (!interMap.isVisible(data.latitude(), data.longitude())) {
+                    interMap.centerOn(data.latitude(), data.longitude());
+                }
+                SwingUtilities.invokeLater(() -> interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), finalCurrentColor, "", "Arial")));
                 SwingUtilities.invokeLater(() -> interMap.drawTopText(formatter.format(data.date())));
                 Thread.sleep(30);
                 SwingUtilities.invokeLater(interMap::clearPoints);
@@ -167,7 +176,23 @@ public class Main {
         }
     }
 
-    public static void saveToJSON(JSONData data) {
-        //SAVE DATA TO JSON FIRST AND THEN LOAD IT TO MAP FROM THE JSON
+    public static Color getNextRainbowColor(Color currentColor) {
+        float[] hsb = Color.RGBtoHSB(currentColor.getRed(), currentColor.getGreen(),currentColor.getBlue(), null);
+
+        float hue = hsb[0];        // 0.0 to 1.0
+        float saturation = hsb[1];
+        float brightness = hsb[2];
+
+        // Smaller number = smoother/slower gradient
+        float step = 0.005f;
+
+        hue += step;
+
+        // loop purple back to red
+        if (hue > 1.0f) {
+            hue -= 1.0f;
+        }
+
+        return Color.getHSBColor(hue, saturation, brightness);
     }
 }
