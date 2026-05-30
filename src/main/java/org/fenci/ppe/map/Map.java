@@ -23,6 +23,10 @@ public class Map {
     private final JXMapViewer mapViewer;
     private final WaypointPainter<ColoredWaypoint> waypointPainter;
 
+    private String topText = "";
+    private Font topTextFont = new Font("Arial", Font.BOLD, 36);
+    private Color topTextColor = Color.WHITE;
+
     public Map() {
         points = new ArrayList<>();
         mapViewer = new JXMapViewer();
@@ -69,7 +73,10 @@ public class Map {
             }
         });
 
-        mapViewer.setOverlayPainter(waypointPainter);
+        mapViewer.setOverlayPainter((g, map, w, h) -> {
+            waypointPainter.paint(g, map, w, h);
+            drawTopText(g, map);
+        });
 
         MouseInputListener mouseInputListener = new PanMouseInputListener(mapViewer);
 
@@ -119,6 +126,44 @@ public class Map {
         mapViewer.repaint();
     }
 
+    public void drawTopText(String text) {
+        this.topText = text;
+        mapViewer.repaint();
+    }
+
+    public void updateTopText(String text) {
+        this.topText = text;
+        mapViewer.repaint();
+    }
+
+    public void clearTopText() {
+        this.topText = "";
+        mapViewer.repaint();
+    }
+
+    private void drawTopText(Graphics2D g, JXMapViewer map) {
+        if (topText == null || topText.isEmpty()) {
+            return;
+        }
+
+        g.setFont(topTextFont);
+
+        FontMetrics metrics = g.getFontMetrics();
+        int textWidth = metrics.stringWidth(topText);
+
+        int x = (map.getWidth() - textWidth) / 2;
+        int y = 50;
+
+        g.setColor(new Color(0, 0, 0, 170));
+        g.fillRoundRect(x - 20, y - 38, textWidth + 40, 50, 15, 15);
+
+        g.setColor(Color.BLACK);
+        g.drawString(topText, x + 2, y + 2);
+
+        g.setColor(topTextColor);
+        g.drawString(topText, x, y);
+    }
+
     public void drawArrow(Coordinate from, Coordinate to) {
         mapViewer.setOverlayPainter((g, map, w, h) -> {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -145,6 +190,7 @@ public class Map {
             g2.dispose();
 
             waypointPainter.paint(g, map, w, h);
+            drawTopText(g, map);
         });
 
         mapViewer.repaint();

@@ -16,6 +16,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 
@@ -26,6 +27,11 @@ public class Main {
 
     public static void main(String[] args) throws InterruptedException, IOException, ImageProcessingException {
 
+        Map interMap = new Map();
+        interMap.display();
+
+        interMap.drawTopText("Photo Locations");
+
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter project name: ");
         String projectName = scanner.nextLine();
@@ -34,9 +40,7 @@ public class Main {
         File saveFolder = new File(rootPath + "\\src\\main\\java\\org\\fenci\\ppe\\data\\savedprojects");
         File projectFile = new File(saveFolder, projectName + ".json");
 
-        Map interMap = new Map();
 //        interMap.addPoint(new Coordinate(33.9695, -118.4165, Color.GREEN, "fsdfsd", "Arial"));
-        interMap.display();
 //        interMap.addPoint(new Coordinate(34, -118.4165, Color.RED, "GAY", "Arial"));
         File photoFolder = new File("C:\\Users\\jeanf\\Pictures\\iCloud Photos\\Photos");
 
@@ -47,10 +51,12 @@ public class Main {
             Gson gson = new GsonBuilder().setPrettyPrinting().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
 
             if (projectFile.exists() && projectFile.isFile()) {
+                //LOAD
                 plottableData = loadProject(projectFile, gson);
                 System.out.println("Already exists");
 
             } else {
+                //CREATE
                 plottableData = getMapData(photoFolder);
                 saveProject(plottableData, saveFolder, projectName, gson);
             }
@@ -62,11 +68,15 @@ public class Main {
                             JSONData::date
                     )
             );
-            long milliDelay = 1000L / plottableData.size();
+            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+
+//            long milliDelay = 3000L / plottableData.size();
             for (JSONData data : plottableData) {
                 System.out.println(data.date() + " " + data.latitude() + " " + data.longitude());
-                SwingUtilities.invokeLater(() -> interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), Color.ORANGE, data.date().toString(), "Arial")));
-                Thread.sleep(milliDelay);
+                SwingUtilities.invokeLater(() -> interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), Color.ORANGE, "", "Arial")));
+                SwingUtilities.invokeLater(() -> interMap.drawTopText(formatter.format(data.date())));
+                Thread.sleep(10);
+                SwingUtilities.invokeLater(interMap::clearPoints);
             }
         } catch (NullPointerException e) {
             System.out.println("Fix your code lil bro");
