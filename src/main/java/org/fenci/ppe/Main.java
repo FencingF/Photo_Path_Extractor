@@ -7,34 +7,49 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import org.fenci.ppe.data.JSONData;
 import com.drew.metadata.exif.GpsDirectory;
+import org.fenci.ppe.map.Coordinate;
+import org.fenci.ppe.map.Map;
+
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) throws InterruptedException, IOException, ImageProcessingException {
 
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter project name: ");
-        String projectName = scanner.nextLine();
+//        Scanner scanner = new Scanner(System.in);
+//        System.out.println("Enter project name: ");
+//        String projectName = scanner.nextLine();
+//
+//        String rootPath = System.getProperty("user.dir");
+//        File saveFolder = new File(rootPath + "\\src\\main\\java\\org\\fenci\\ppe\\data\\savedprojects");
+//
+//        System.out.println(saveFolder.exists());
 
-        //        Map interMap = new Map();
+        Map interMap = new Map();
 //        interMap.addPoint(new Coordinate(33.9695, -118.4165, Color.GREEN, "fsdfsd", "Arial"));
-//        interMap.display();
+        interMap.display();
 //        interMap.addPoint(new Coordinate(34, -118.4165, Color.RED, "GAY", "Arial"));
         File photoFolder = new File("C:\\Users\\jeanf\\Pictures\\iCloud Photos\\Photos");
 
-        List<JSONData> plottableData = getMapData(photoFolder);
-        if (plottableData != null) {
+        try {
+            List<JSONData> plottableData = getMapData(photoFolder);
+            plottableData.sort(
+                    Comparator.comparing(
+                            JSONData::date
+                    )
+            );
             for (JSONData data : plottableData) {
                 System.out.println(data.date() + " " + data.latitude() + " " + data.longitude());
+                interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), Color.ORANGE, data.date().toString(), "Arial"));
+                Thread.sleep(10);
             }
+        } catch (NullPointerException e) {
+            System.out.println("Fix your code lil bro");
         }
-        System.out.println("Fix your code lil bro");
     }
 
     public static List<JSONData> getMapData(File photoFolder) {
@@ -48,40 +63,61 @@ public class Main {
         final int limit = 100; //Amount of pictures downloaded at a time.
         int processed = 0;
         int index = 0;
+
         ArrayList<JSONData> mapData = new ArrayList<>();
         ArrayList<File> filesToDelete = new ArrayList<>();
 
         for (File file : files) {
-            if (file.isFile()) {
-                boolean isLast = (index == files.length - 1);
-                if (processed >= limit || isLast) {
-                    unloadFile(filesToDelete);
-                    processed = 0;
-                    filesToDelete.clear();
-                }
+            index++;
+            if (file.isFile() && isPicture(file)) {
+
+                processed++;
 
                 try {
-                    filesToDelete.add(file);
-
                     Metadata metadata = ImageMetadataReader.readMetadata(file);
                     GpsDirectory gps = metadata.getFirstDirectoryOfType(GpsDirectory.class);
+
                     ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+                    filesToDelete.add(file);
+
+                    if (gps == null || gps.getGeoLocation() == null || gps.getGeoLocation().isZero()) {
+                        System.out.println(file.getName() + " had no GPS data :(");
+                        continue;
+                    }
+                    System.out.println(file.getName() + " had GPS data! :)");
 
                     GeoLocation loc = gps.getGeoLocation();
                     Date dateTaken = null;
                     if (directory != null) {
                         dateTaken = directory.getDateOriginal();
                     }
-                    mapData.add(new JSONData(file.getName(), dateTaken, loc.getLatitude(), loc.getLongitude()));
-                    processed++;
+
+                    if (dateTaken != null) {
+                        mapData.add(new JSONData(file.getName(), dateTaken, loc.getLatitude(), loc.getLongitude()));
+                    }
                 } catch (Exception e) {
                     System.out.println(file.getName() + " could not be processed.");
                 }
-                index++;
-                System.out.println(index);
+
+                if (processed >= limit) {
+                    unloadFile(filesToDelete);
+                    processed = 0;
+                    filesToDelete.clear();
+                }
+            }
+            if (index % 25 == 0) {
+                System.out.println("Went through " + index + " photos");
             }
         }
+        if (!filesToDelete.isEmpty()) { //After the loop if the files are not all deleted they are now
+            unloadFile(filesToDelete);
+        }
         return mapData;
+    }
+
+    public static boolean isPicture(File file) {
+//        file.getName().endsWith(".JPG") || file.getName().endsWith(".PNG") || file.getName().endsWith(".JPEG") ||
+        return file.getName().endsWith(".HEIC");
     }
 
     public static void unloadFile(List<File> filesToBeUnloaded) {
@@ -100,7 +136,7 @@ public class Main {
         }
     }
 
-    public static void saveToJSON() {
-
+    public static void saveToJSON(JSONData data) {
+        //SAVE DATA TO JSON FIRST AND THEN LOAD IT TO MAP FROM THE JSON
     }
 }
