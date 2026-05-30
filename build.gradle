@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.fenci.ppe'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'com.drewnoakes:metadata-extractor:2.19.0'
+    implementation 'org.jxmapviewer:jxmapviewer2:2.8'
+    implementation 'com.drewnoakes:metadata-extractor:2.19.0'
+}
+
+test {
+    useJUnitPlatform()
+}
