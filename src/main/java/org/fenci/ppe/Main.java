@@ -75,7 +75,7 @@ public class Main {
                 System.out.println(data.date() + " " + data.latitude() + " " + data.longitude());
                 SwingUtilities.invokeLater(() -> interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), Color.ORANGE, "", "Arial")));
                 SwingUtilities.invokeLater(() -> interMap.drawTopText(formatter.format(data.date())));
-                Thread.sleep(10);
+                Thread.sleep(30);
                 SwingUtilities.invokeLater(interMap::clearPoints);
             }
         } catch (NullPointerException e) {
