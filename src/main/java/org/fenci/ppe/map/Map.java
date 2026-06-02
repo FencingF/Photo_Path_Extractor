@@ -1,5 +1,6 @@
 package org.fenci.ppe.map;
 
+import org.fenci.ppe.animation.AnimationController;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.input.PanMouseInputListener;
 import org.jxmapviewer.input.ZoomMouseWheelListenerCursor;
@@ -105,14 +106,90 @@ public class Map {
         mapViewer.setAddressLocation(new GeoPosition(latitude, longitude));
     }
 
-    public void display() {
+    public void display(AnimationController controller) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Satellite Map");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(900, 700);
+            frame.setSize(900, 750);
+            frame.setLayout(new BorderLayout());
             frame.add(mapViewer, BorderLayout.CENTER);
+            frame.add(buildControlPanel(controller), BorderLayout.SOUTH);
             frame.setVisible(true);
         });
+    }
+
+    private JPanel buildControlPanel(AnimationController controller) {
+        JPanel panel = new JPanel(new BorderLayout(8, 4));
+        panel.setBackground(new Color(30, 30, 30));
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+
+        // --- Slider ---
+        JSlider slider = new JSlider(0, Math.max(1, controller.getTotalFrames() - 1), 0);
+        slider.setBackground(new Color(30, 30, 30));
+        slider.setForeground(Color.WHITE);
+
+        // Keep slider in sync with animation
+        controller.setOnFrameChange(() ->
+                slider.setValue(controller.getCurrentIndex())
+        );
+
+        // Scrubbing: user drags slider
+        slider.addChangeListener(e -> {
+            if (slider.getValueIsAdjusting()) {
+                controller.seekTo(slider.getValue());
+            }
+        });
+
+        // --- Buttons ---
+        JButton playPauseBtn = new JButton("⏸ Pause");
+        JButton replayBtn    = new JButton("↺ Replay");
+        styleButton(playPauseBtn);
+        styleButton(replayBtn);
+
+        playPauseBtn.addActionListener(e -> {
+            if (controller.isPlaying()) {
+                controller.pause();
+                playPauseBtn.setText("▶ Play");
+            } else {
+                controller.play();
+                playPauseBtn.setText("⏸ Pause");
+            }
+        });
+
+        replayBtn.addActionListener(e -> {
+            controller.replay();
+            playPauseBtn.setText("⏸ Pause");
+        });
+
+        // --- Speed spinner ---
+        JLabel speedLabel = new JLabel("Speed (ms):");
+        speedLabel.setForeground(Color.WHITE);
+        SpinnerNumberModel speedModel = new SpinnerNumberModel(
+                (int) controller.getDelay(), 1, 5000, 5
+        );
+        JSpinner speedSpinner = new JSpinner(speedModel);
+        speedSpinner.setMaximumSize(new Dimension(80, 28));
+        speedSpinner.addChangeListener(e ->
+                controller.setDelay((int) speedSpinner.getValue())
+        );
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        btnPanel.setBackground(new Color(30, 30, 30));
+        btnPanel.add(playPauseBtn);
+        btnPanel.add(replayBtn);
+        btnPanel.add(speedLabel);
+        btnPanel.add(speedSpinner);
+
+        panel.add(slider, BorderLayout.CENTER);
+        panel.add(btnPanel, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private void styleButton(JButton btn) {
+        btn.setBackground(new Color(60, 60, 60));
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
     }
 
     private void updateMarkers() {

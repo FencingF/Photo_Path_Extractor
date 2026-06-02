@@ -1,17 +1,16 @@
 package org.fenci.ppe;
 
 import com.drew.imaging.ImageMetadataReader;
-import com.drew.imaging.ImageProcessingException;
 import com.drew.lang.GeoLocation;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.fenci.ppe.animation.AnimationController;
 import org.fenci.ppe.data.JSONData;
 import com.drew.metadata.exif.GpsDirectory;
 import org.fenci.ppe.map.Coordinate;
 import org.fenci.ppe.map.Map;
-import org.jxmapviewer.viewer.GeoPosition;
 
 import javax.swing.*;
 import java.awt.*;
@@ -29,7 +28,6 @@ public class Main {
     public static void main(String[] args) throws InterruptedException, IOException {
 
         Map interMap = new Map();
-        interMap.display();
 
         interMap.drawTopText("Photo Locations");
 
@@ -65,28 +63,11 @@ public class Main {
 
             //END JSON CODE
 
-            plottableData.sort(
-                    Comparator.comparing(
-                            JSONData::date
-                    )
-            );
-            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+            plottableData.sort(Comparator.comparing(JSONData::date));
 
-            Color currentColor = Color.RED;
-
-//            long milliDelay = 3000L / plottableData.size();
-            for (JSONData data : plottableData) {
-                currentColor = getNextRainbowColor(currentColor);
-                System.out.println(data.date() + " " + data.latitude() + " " + data.longitude());
-                Color finalCurrentColor = currentColor;
-                if (!interMap.isVisible(data.latitude(), data.longitude())) {
-                    interMap.centerOn(data.latitude(), data.longitude());
-                }
-                SwingUtilities.invokeLater(() -> interMap.addPoint(new Coordinate(data.latitude(), data.longitude(), finalCurrentColor, "", "Arial")));
-                SwingUtilities.invokeLater(() -> interMap.drawTopText(formatter.format(data.date())));
-                Thread.sleep(30);
-                SwingUtilities.invokeLater(interMap::clearPoints);
-            }
+            AnimationController controller = new AnimationController(interMap, plottableData);
+            interMap.display(controller);   // <-- pass controller here
+            controller.play();
         } catch (NullPointerException e) {
             System.out.println("Fix your code lil bro");
         }
